@@ -1,6 +1,8 @@
 import UserAgent from './css/user-agent';
 import { extend } from 'marbles/utils';
+import Panel from './panel';
 import Clusters from './clusters';
+import Credentials from './credentials';
 
 var Main = React.createClass({
 	getDefaultProps: function () {
@@ -20,7 +22,10 @@ var Main = React.createClass({
 		return (
 			<div style={this.props.css}>
 				<div style={extend({}, this.props.childrenCSS, { marginRight: 16, maxWidth: 360, minWidth: 300, flexBasis: 360 })}>
-					<Clusters dataStore={this.props.dataStore} />
+					<Panel style={{ height: '100%' }}>
+						<Clusters dataStore={this.props.dataStore} />
+						<Credentials dataStore={this.props.dataStore} />
+					</Panel>
 				</div>
 
 				<div style={this.props.childrenCSS}>

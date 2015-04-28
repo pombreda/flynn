@@ -1,5 +1,4 @@
 import UserAgent from './css/user-agent';
-import Panel from './panel';
 import { List, ListItem } from './list';
 import Dispatcher from '../dispatcher';
 
@@ -8,7 +7,7 @@ var Clusters = React.createClass({
 		var currentClusterID = this.state.currentClusterID;
 		var clusters = this.state.clusters;
 		return (
-			<Panel style={{ height: '100%' }}>
+			<div>
 				<h2>Clusters</h2>
 
 				<List>
@@ -62,7 +61,7 @@ var Clusters = React.createClass({
 						);
 					}.bind(this))}
 				</List>
-			</Panel>
+			</div>
 		);
 	},
 
