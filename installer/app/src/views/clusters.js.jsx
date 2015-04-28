@@ -1,4 +1,3 @@
-import UserAgent from './css/user-agent';
 import { List, ListItem } from './list';
 import Dispatcher from '../dispatcher';
 
@@ -21,8 +20,12 @@ var Clusters = React.createClass({
 								selected={currentClusterID === cluster.ID}
 								path={'/clusters/:id'}
 								params={[{ id: cluster.ID }]}
-								innerStyle={{
-									display: UserAgent.isSafari() ? '-webkit-flex' : 'flex'
+								style={{
+									selectors: [
+										['> a', {
+											display: 'flex'
+										}]
+									]
 								}}>
 
 								<div style={{
