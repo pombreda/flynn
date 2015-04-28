@@ -12,6 +12,10 @@ import (
 
 type Cluster interface {
 	Base() *BaseCluster
+	SetDefaultsAndValidate() error
+	Run()
+	Delete()
+	Type() string
 }
 
 type credential struct {
@@ -36,6 +40,14 @@ type AWSCluster struct {
 	stack *cloudformation.Stack
 	cf    *cloudformation.CloudFormation
 	ec2   *ec2.EC2
+}
+
+type DigitalOceanCluster struct {
+	ClusterID string     `json:"cluster_id" ql:"index xCluster"`
+	Region    string     `json:"region"`
+	DeletedAt *time.Time `json:"deleted_at,omitempty"`
+
+	base *BaseCluster
 }
 
 type BaseCluster struct {
@@ -96,13 +108,14 @@ type Prompt struct {
 
 func (i *Installer) migrateDB() error {
 	schemaInterfaces := map[interface{}]string{
-		(*credential)(nil):  "credentials",
-		(*BaseCluster)(nil): "clusters",
-		(*AWSCluster)(nil):  "aws_clusters",
-		(*Event)(nil):       "events",
-		(*Prompt)(nil):      "prompts",
-		(*InstanceIPs)(nil): "instances",
-		(*Domain)(nil):      "domains",
+		(*credential)(nil):          "credentials",
+		(*BaseCluster)(nil):         "clusters",
+		(*AWSCluster)(nil):          "aws_clusters",
+		(*DigitalOceanCluster)(nil): "digital_ocean_clusters",
+		(*Event)(nil):               "events",
+		(*Prompt)(nil):              "prompts",
+		(*InstanceIPs)(nil):         "instances",
+		(*Domain)(nil):              "domains",
 	}
 
 	tx, err := i.db.Begin()

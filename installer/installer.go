@@ -53,60 +53,54 @@ func (i *Installer) txExec(query string, args ...interface{}) error {
 	return tx.Commit()
 }
 
-func (i *Installer) LaunchCluster(c interface{}) error {
-	switch v := c.(type) {
-	case *AWSCluster:
-		return i.launchAWSCluster(v)
-	default:
-		return fmt.Errorf("Invalid cluster type %T", c)
-	}
-}
-
-func (i *Installer) launchAWSCluster(c *AWSCluster) error {
+func (i *Installer) LaunchCluster(c Cluster) error {
 	if err := c.SetDefaultsAndValidate(); err != nil {
 		return err
 	}
 
-	if err := i.saveAWSCluster(c); err != nil {
+	if err := i.saveCluster(c); err != nil {
 		return err
 	}
+
+	base := c.Base()
 
 	i.clustersMtx.Lock()
 	i.clusters = append(i.clusters, c)
 	i.clustersMtx.Unlock()
 	i.SendEvent(&Event{
 		Type:      "new_cluster",
-		Cluster:   c.base,
-		ClusterID: c.base.ID,
+		Cluster:   base,
+		ClusterID: base.ID,
 	})
 	c.Run()
 	return nil
 }
 
-func (i *Installer) saveAWSCluster(c *AWSCluster) error {
+func (i *Installer) saveCluster(c Cluster) error {
 	i.dbMtx.Lock()
 	defer i.dbMtx.Unlock()
 
-	c.ClusterID = c.base.ID
-	c.base.Type = "aws"
-	c.base.Name = c.ClusterID
+	base := c.Base()
 
-	clusterFields, err := ql.Marshal(c.base)
+	base.Type = c.Type()
+	base.Name = base.ID
+
+	baseFields, err := ql.Marshal(base)
 	if err != nil {
 		return err
 	}
-	clustersVStr := make([]string, 0, len(clusterFields))
+	baseVStr := make([]string, 0, len(baseFields))
+	for idx := range baseFields {
+		baseVStr = append(baseVStr, fmt.Sprintf("$%d", idx+1))
+	}
+
+	clusterFields, err := ql.Marshal(c)
+	if err != nil {
+		return err
+	}
+	clusterVStr := make([]string, 0, len(clusterFields))
 	for idx := range clusterFields {
-		clustersVStr = append(clustersVStr, fmt.Sprintf("$%d", idx+1))
-	}
-
-	awsFields, err := ql.Marshal(c)
-	if err != nil {
-		return err
-	}
-	awsVStr := make([]string, 0, len(awsFields))
-	for idx := range awsFields {
-		awsVStr = append(awsVStr, fmt.Sprintf("$%d", idx+1))
+		clusterVStr = append(clusterVStr, fmt.Sprintf("$%d", idx+1))
 	}
 
 	if err != nil {
@@ -116,11 +110,11 @@ func (i *Installer) saveAWSCluster(c *AWSCluster) error {
 	if err != nil {
 		return err
 	}
-	if _, err := tx.Exec(fmt.Sprintf("INSERT INTO clusters VALUES (%s)", strings.Join(clustersVStr, ",")), clusterFields...); err != nil {
+	if _, err := tx.Exec(fmt.Sprintf("INSERT INTO clusters VALUES (%s)", strings.Join(baseVStr, ",")), baseFields...); err != nil {
 		tx.Rollback()
 		return err
 	}
-	if _, err := tx.Exec(fmt.Sprintf("INSERT INTO aws_clusters VALUES (%s)", strings.Join(awsVStr, ",")), awsFields...); err != nil {
+	if _, err := tx.Exec(fmt.Sprintf("INSERT INTO %s_clusters VALUES (%s)", c.Type(), strings.Join(clusterVStr, ",")), clusterFields...); err != nil {
 		tx.Rollback()
 		return err
 	}

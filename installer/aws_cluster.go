@@ -25,6 +25,11 @@ var DisallowedEC2InstanceTypes = []string{"t1.micro", "t2.micro", "t2.small", "m
 var DefaultInstanceType = "m3.medium"
 var StackNotFoundError = errors.New("Stack does not exist")
 
+func (c *AWSCluster) Type() string {
+	const t = "aws"
+	return t
+}
+
 func (c *AWSCluster) Base() *BaseCluster {
 	return c.base
 }
@@ -60,6 +65,8 @@ func (c *AWSCluster) saveField(field string, value interface{}) error {
 }
 
 func (c *AWSCluster) SetDefaultsAndValidate() error {
+	c.ClusterID = c.base.ID
+
 	if c.InstanceType == "" {
 		c.InstanceType = DefaultInstanceType
 	}
