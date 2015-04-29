@@ -1,15 +1,18 @@
-import { List, ListItem } from './list';
+import Modal from '../modal';
+import Dispatcher from '../../dispatcher';
+import PrettySelect from '../pretty-select';
 
 var Credentials = React.createClass({
 	render: function () {
 		return (
-			<div>
+			<Modal visible={true} onHide={this.__handleHide}>
 				<h2>Credentials</h2>
 
-				<List>
-					<ListItem path="/credentials/new">New</ListItem>
-				</List>
-			</div>
+				<PrettySelect>
+					<option value="aws">AWS</option>
+					<option value="digital_ocean">Digital Ocean</option>
+				</PrettySelect>
+			</Modal>
 		);
 	},
 
@@ -31,6 +34,13 @@ var Credentials = React.createClass({
 
 	__handleDataChange: function () {
 		this.setState(this.__getState());
+	},
+
+	__handleHide: function () {
+		Dispatcher.dispatch({
+			name: 'NAVIGATE',
+			path: '/'
+		});
 	}
 });
 export default Credentials;

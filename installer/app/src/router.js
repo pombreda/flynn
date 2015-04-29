@@ -1,13 +1,16 @@
 import Router from 'marbles/router';
 import WizardComponent from './views/wizard';
 import ClusterDeleteComponent from './views/modal/cluster-delete';
+import CredentialsComponent from './views/modal/credentials';
 import Dispatcher from './dispatcher';
 
 var MainRouter = Router.createClass({
 	routes: [
 		{ path: '', handler: 'landingPage' },
 		{ path: '/clusters/:cluster_id', handler: 'landingPage' },
-		{ path: '/clusters/:cluster_id/delete', handler: 'landingPage', modalHandler: 'clusterDeleteModal' }
+		{ path: '/clusters/:cluster_id/delete', handler: 'landingPage', modalHandler: 'clusterDeleteModal' },
+		{ path: '/credentials', handler: 'landingPage', modalHandler: 'credentialsModal' },
+		{ path: '/credentials/new', handler: 'landingPage', modalHandler: 'credentialsModal' }
 	],
 
 	willInitialize: function () {
@@ -46,6 +49,13 @@ var MainRouter = Router.createClass({
 			clusterID: params[0].cluster_id
 		};
 		context.renderModal(ClusterDeleteComponent, props);
+	},
+
+	credentialsModal: function (params, opts, context) {
+		var props = {
+			dataStore: context.dataStore
+		};
+		context.renderModal(CredentialsComponent, props);
 	},
 
 	handleEvent: function (event) {

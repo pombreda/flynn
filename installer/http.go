@@ -82,6 +82,8 @@ func ServeHTTP() error {
 	httpRouter := httprouter.New()
 
 	httpRouter.GET("/", api.ServeTemplate)
+	httpRouter.GET("/credentials", api.ServeTemplate)
+	httpRouter.GET("/credentials/:id", api.ServeTemplate)
 	httpRouter.GET("/clusters/:id", api.ServeTemplate)
 	httpRouter.GET("/clusters/:id/delete", api.ServeTemplate)
 	httpRouter.DELETE("/clusters/:id", api.DeleteCluster)

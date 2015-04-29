@@ -1,7 +1,8 @@
 import Sheet from './css/sheet';
 import Panel from './panel';
 import Clusters from './clusters';
-import Credentials from './credentials';
+import RouteLink from './route-link';
+import BtnCSS from './css/button';
 
 var Main = React.createClass({
 	getInitialState: function () {
@@ -20,8 +21,14 @@ var Main = React.createClass({
 				}]
 			]
 		});
+		var credsBtnStyleEl = Sheet.createElement(BtnCSS, {
+			position: 'absolute',
+			bottom: '20px',
+			right: '20px'
+		});
 		return {
-			styleEl: styleEl
+			styleEl: styleEl,
+			credsBtnStyleEl: credsBtnStyleEl
 		};
 	},
 
@@ -29,9 +36,11 @@ var Main = React.createClass({
 		return (
 			<div id={this.state.styleEl.id}>
 				<div>
-					<Panel style={{ height: '100%' }}>
+					<Panel style={{ height: '100%', position: 'relative', paddingBottom: 80 }}>
 						<Clusters dataStore={this.props.dataStore} />
-						<Credentials dataStore={this.props.dataStore} />
+						<RouteLink
+							path='/credentials'
+							id={this.state.credsBtnStyleEl.id}>Credentials</RouteLink>
 					</Panel>
 				</div>
 
@@ -44,6 +53,7 @@ var Main = React.createClass({
 
 	componentDidMount: function () {
 		this.state.styleEl.commit();
+		this.state.credsBtnStyleEl.commit();
 	}
 });
 export default Main;
