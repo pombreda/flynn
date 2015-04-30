@@ -91,6 +91,7 @@ func ServeHTTP() error {
 	httpRouter.GET("/events", api.Events)
 	httpRouter.POST("/clusters/:id/prompts/:prompt_id", api.Prompt)
 	httpRouter.GET("/assets/*assetPath", api.ServeAsset)
+	httpRouter.POST("/credentials", api.NewCredential)
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -227,6 +228,16 @@ func (api *httpAPI) Prompt(w http.ResponseWriter, req *http.Request, params http
 		return
 	}
 	prompt.Resolve(input)
+	w.WriteHeader(200)
+}
+
+func (api *httpAPI) NewCredential(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	var cred *Credential
+	if err := httphelper.DecodeJSON(req, &cred); err != nil {
+		httphelper.Error(w, err)
+		return
+	}
+	// TODO(jvatic): Save credential in db
 	w.WriteHeader(200)
 }
 

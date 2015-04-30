@@ -21,6 +21,7 @@ export default createClass({
 	getInitialState: function () {
 		return {
 			clusters: [],
+			credentials: [],
 			currentClusterID: null,
 			currentCluster: newCluster
 		};

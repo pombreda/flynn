@@ -53,7 +53,8 @@ var MainRouter = Router.createClass({
 
 	credentialsModal: function (params, opts, context) {
 		var props = {
-			dataStore: context.dataStore
+			dataStore: context.dataStore,
+			provider: params[0].provider === 'digital_ocean' ? 'digital_ocean' : 'aws'
 		};
 		context.renderModal(CredentialsComponent, props);
 	},
