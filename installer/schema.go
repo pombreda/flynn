@@ -17,11 +17,15 @@ type Cluster interface {
 	Run()
 	Delete()
 	Type() string
+	SetBase(*BaseCluster)
+	SetCreds(*Credential) error
 }
 
-type credential struct {
+type Credential struct {
 	ID     string `json:"id" ql:"index xID"`
 	Secret string `json:"secret"`
+	Name   string `json:"name"`
+	Type   string `json:"type"` // enum(aws, digital_ocean)
 }
 
 type AWSCluster struct {
@@ -72,6 +76,7 @@ type BaseCluster struct {
 	DNSZoneID           string            `json:"dns_zone_id,omitempty"`
 	DeletedAt           *time.Time        `json:"deleted_at,omitempty"`
 
+	credential    *Credential
 	installer     *Installer
 	pendingPrompt *Prompt
 	done          bool
@@ -174,7 +179,7 @@ func (i *Installer) updatedbColumns(in interface{}, t string) error {
 
 func (i *Installer) migrateDB() error {
 	schemaInterfaces := map[interface{}]string{
-		(*credential)(nil):          "credentials",
+		(*Credential)(nil):          "credentials",
 		(*BaseCluster)(nil):         "clusters",
 		(*AWSCluster)(nil):          "aws_clusters",
 		(*DigitalOceanCluster)(nil): "digital_ocean_clusters",

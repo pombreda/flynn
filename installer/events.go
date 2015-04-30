@@ -77,12 +77,12 @@ func (i *Installer) GetEventsSince(eventID string) []*Event {
 			continue
 		}
 		if event.Type == "log" {
-			if c, err := i.FindCluster(event.ClusterID); err != nil || (err == nil && c.State == "running") {
+			if c, err := i.FindBaseCluster(event.ClusterID); err != nil || (err == nil && c.State == "running") {
 				continue
 			}
 		}
 		if event.Type == "new_cluster" || event.Type == "install_done" {
-			event.Cluster, err = i.FindCluster(event.ClusterID)
+			event.Cluster, err = i.FindBaseCluster(event.ClusterID)
 			if err != nil {
 				i.logger.Debug(fmt.Sprintf("GetEventsSince Error finding cluster %s: %s", event.ClusterID, err.Error()))
 				continue

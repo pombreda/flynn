@@ -7,7 +7,6 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/flynn/flynn/Godeps/_workspace/src/github.com/awslabs/aws-sdk-go/aws"
 	"github.com/flynn/flynn/Godeps/_workspace/src/github.com/cznic/ql"
 	log "github.com/flynn/flynn/Godeps/_workspace/src/gopkg.in/inconshreveable/log15.v2"
 )
@@ -121,34 +120,12 @@ func (i *Installer) saveCluster(c Cluster) error {
 	return tx.Commit()
 }
 
-func (i *Installer) SaveAWSCredentials(id, secret string) error {
-	i.dbMtx.Lock()
-	defer i.dbMtx.Unlock()
-	return i.txExec(`
-		INSERT INTO credentials (ID, Secret) VALUES ($1, $2);
-  `, id, secret)
-}
-
-func (i *Installer) FindAWSCredentials(id string) (aws.CredentialsProvider, error) {
-	if id == "aws_env" {
-		return aws.EnvCreds()
-	}
-	var secret string
-
-	if err := i.db.QueryRow(`SELECT Secret FROM credentials WHERE id == $1 LIMIT 1`, id).Scan(&secret); err != nil {
-		return nil, err
-	}
-	return aws.Creds(id, secret, ""), nil
-}
-
-func (i *Installer) FindCluster(id string) (*BaseCluster, error) {
+func (i *Installer) FindBaseCluster(id string) (*BaseCluster, error) {
 	i.clustersMtx.RLock()
 	for _, c := range i.clusters {
-		if cluster, ok := c.(*AWSCluster); ok {
-			if cluster.ClusterID == id {
-				i.clustersMtx.RUnlock()
-				return cluster.base, nil
-			}
+		base := c.Base()
+		if base.ID == id {
+			return base, nil
 		}
 	}
 	i.clustersMtx.RUnlock()
@@ -188,7 +165,44 @@ func (i *Installer) FindCluster(id string) (*BaseCluster, error) {
 	}
 	c.InstanceIPs = instanceIPs
 
+	credential := &Credential{ID: c.CredentialID}
+	err = i.db.QueryRow(`
+    SELECT Type, Name, Secret FROM credentials WHERE ID = $1
+  `, credential.ID).Scan(&credential.Type, &credential.Name, &credential.Secret)
+	if err != nil {
+		return nil, err
+	}
+	c.credential = credential
+
 	return c, nil
+}
+
+func (i *Installer) FindCluster(id string) (Cluster, error) {
+	i.clustersMtx.RLock()
+	for _, c := range i.clusters {
+		if c.Base().ID == id {
+			return c, nil
+		}
+	}
+	i.clustersMtx.RUnlock()
+
+	base := &BaseCluster{}
+	if err := i.db.QueryRow(`SELECT Type FROM clusters WHERE ID = $1`, id).Scan(&base.Type); err != nil {
+		return nil, err
+	}
+
+	switch base.Type {
+	case "aws":
+		return i.FindAWSCluster(id)
+	case "digital_ocean":
+		return i.FindDigitalOceanCluster(id)
+	default:
+		return nil, fmt.Errorf("Invalid cluster type: %s", base.Type)
+	}
+}
+
+func (i *Installer) FindDigitalOceanCluster(id string) (*DigitalOceanCluster, error) {
+	return nil, errors.New("Not implemented")
 }
 
 func (i *Installer) FindAWSCluster(id string) (*AWSCluster, error) {
@@ -203,7 +217,7 @@ func (i *Installer) FindAWSCluster(id string) (*AWSCluster, error) {
 	}
 	i.clustersMtx.RUnlock()
 
-	cluster, err := i.FindCluster(id)
+	cluster, err := i.FindBaseCluster(id)
 	if err != nil {
 		return nil, err
 	}
@@ -219,11 +233,11 @@ func (i *Installer) FindAWSCluster(id string) (*AWSCluster, error) {
 		return nil, err
 	}
 
-	creds, err := i.FindAWSCredentials(cluster.CredentialID)
+	awsCreds, err := awsCluster.FindCredential()
 	if err != nil {
 		return nil, err
 	}
-	awsCluster.creds = creds
+	awsCluster.creds = awsCreds
 
 	return awsCluster, nil
 }

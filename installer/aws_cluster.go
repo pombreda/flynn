@@ -34,6 +34,37 @@ func (c *AWSCluster) Base() *BaseCluster {
 	return c.base
 }
 
+func (c *AWSCluster) SetBase(base *BaseCluster) {
+	c.base = base
+}
+
+func (c *AWSCluster) FindCredential() (aws.CredentialsProvider, error) {
+	if c.base.CredentialID == "aws_env" {
+		return aws.EnvCreds()
+	}
+	cred, err := c.base.FindCredential()
+	if err != nil {
+		return nil, err
+	}
+	return aws.Creds(cred.ID, cred.Secret, ""), nil
+}
+
+func (c *AWSCluster) SetCreds(creds *Credential) error {
+	if creds == nil {
+		c.base.CredentialID = "aws_env"
+		awsCreds, err := aws.EnvCreds()
+		if err != nil {
+			return err
+		}
+		c.creds = awsCreds
+		return nil
+	}
+	c.base.credential = creds
+	c.base.CredentialID = creds.ID
+	c.creds = aws.Creds(creds.ID, creds.Secret, "")
+	return c.base.SaveCredential()
+}
+
 func (c *AWSCluster) wrapRequest(runRequest func() error) error {
 	const rateExceededErrStr = "Rate exceeded"
 	const maxBackoff = 10 * time.Second
@@ -66,6 +97,10 @@ func (c *AWSCluster) saveField(field string, value interface{}) error {
 
 func (c *AWSCluster) SetDefaultsAndValidate() error {
 	c.ClusterID = c.base.ID
+
+	if c.StackName == "" {
+		c.StackName = c.base.ID
+	}
 
 	if c.InstanceType == "" {
 		c.InstanceType = DefaultInstanceType
