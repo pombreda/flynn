@@ -165,10 +165,7 @@ func (i *Installer) FindBaseCluster(id string) (*BaseCluster, error) {
 	}
 	c.InstanceIPs = instanceIPs
 
-	credential := &Credential{ID: c.CredentialID}
-	err = i.db.QueryRow(`
-    SELECT Type, Name, Secret FROM credentials WHERE ID = $1
-  `, credential.ID).Scan(&credential.Type, &credential.Name, &credential.Secret)
+	credential, err := c.FindCredential()
 	if err != nil {
 		return nil, err
 	}
@@ -187,7 +184,7 @@ func (i *Installer) FindCluster(id string) (Cluster, error) {
 	i.clustersMtx.RUnlock()
 
 	base := &BaseCluster{}
-	if err := i.db.QueryRow(`SELECT Type FROM clusters WHERE ID = $1`, id).Scan(&base.Type); err != nil {
+	if err := i.db.QueryRow(`SELECT Type FROM clusters WHERE ID == $1`, id).Scan(&base.Type); err != nil {
 		return nil, err
 	}
 

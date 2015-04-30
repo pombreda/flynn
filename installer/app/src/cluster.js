@@ -177,6 +177,7 @@ var Cluster = createClass({
 
 Cluster.jsonFields = {
 	id: 'ID',
+	type: 'type',
 	state: 'state',
 	region: 'region',
 	num_instances: 'numInstances',

@@ -20,7 +20,7 @@ import (
 
 func (c *BaseCluster) FindCredential() (*Credential, error) {
 	cred := &Credential{}
-	if err := c.installer.db.QueryRow(`SELECT ID, Secret, Name, Type FROM credentials WHERE id == $1 LIMIT 1`, c.CredentialID).Scan(&cred.ID, &cred.Secret, &cred.Name, &cred.Type); err != nil {
+	if err := c.installer.db.QueryRow(`SELECT ID, Secret, Name, Type FROM credentials WHERE ID == $1 LIMIT 1`, c.CredentialID).Scan(&cred.ID, &cred.Secret, &cred.Name, &cred.Type); err != nil {
 		return nil, err
 	}
 	return cred, nil

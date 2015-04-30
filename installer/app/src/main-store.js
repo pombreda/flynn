@@ -83,7 +83,11 @@ export default createClass({
 
 	launchAWS: function (inputs) {
 		var cluster = new Cluster({});
-		cluster.creds = inputs.creds;
+		cluster.type = 'aws';
+		cluster.creds = {
+			id: inputs.creds.access_key_id || 'aws_env',
+			secret: inputs.creds.secret_access_key
+		};
 		cluster.region = inputs.region;
 		cluster.instanceType = inputs.instanceType;
 		cluster.numInstances = inputs.numInstances;

@@ -50,7 +50,7 @@ func (c *AWSCluster) FindCredential() (aws.CredentialsProvider, error) {
 }
 
 func (c *AWSCluster) SetCreds(creds *Credential) error {
-	if creds == nil {
+	if creds == nil || creds.ID == "aws_env" {
 		c.base.CredentialID = "aws_env"
 		awsCreds, err := aws.EnvCreds()
 		if err != nil {

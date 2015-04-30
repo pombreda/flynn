@@ -130,8 +130,21 @@ func (api *httpAPI) AssetManifest() (*assetManifest, error) {
 }
 
 func (api *httpAPI) LaunchCluster(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+
+	var inputJSON bytes.Buffer
+	if _, err := io.Copy(&inputJSON, req.Body); err != nil {
+		httphelper.Error(w, err)
+		return
+	}
+
+	decodeJSON := func(dst interface{}) error {
+		in := bytes.NewBuffer(inputJSON.Bytes())
+		dec := json.NewDecoder(in)
+		return dec.Decode(dst)
+	}
+
 	var base *BaseCluster
-	if err := httphelper.DecodeJSON(req, &base); err != nil {
+	if err := decodeJSON(&base); err != nil {
 		httphelper.Error(w, err)
 		return
 	}
@@ -151,23 +164,25 @@ func (api *httpAPI) LaunchCluster(w http.ResponseWriter, req *http.Request, para
 	base.State = "starting"
 	base.installer = api.Installer
 
-	if err := httphelper.DecodeJSON(req, &cluster); err != nil {
+	if err := decodeJSON(&cluster); err != nil {
 		httphelper.Error(w, err)
 		return
 	}
 
 	cluster.SetBase(base)
 
-	var creds *Credential
-	if err := httphelper.DecodeJSON(req, &creds); err != nil {
+	var wrappedCreds *jsonCredsInput
+	if err := decodeJSON(&wrappedCreds); err != nil {
 		httphelper.Error(w, err)
 		return
 	}
 
-	if err := cluster.SetCreds(creds); err != nil {
+	if err := cluster.SetCreds(wrappedCreds.Creds); err != nil {
 		httphelper.Error(w, err)
 		return
 	}
+
+	fmt.Println(wrappedCreds.Creds)
 
 	if err := api.Installer.LaunchCluster(cluster); err != nil {
 		httphelper.Error(w, err)
