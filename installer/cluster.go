@@ -18,24 +18,17 @@ import (
 	"github.com/flynn/flynn/pkg/etcdcluster"
 )
 
-func (c *BaseCluster) FindCredential() (*Credential, error) {
-	cred := &Credential{}
-	if err := c.installer.db.QueryRow(`SELECT ID, Secret, Name, Type FROM credentials WHERE ID == $1 LIMIT 1`, c.CredentialID).Scan(&cred.ID, &cred.Secret, &cred.Name, &cred.Type); err != nil {
-		return nil, err
-	}
-	return cred, nil
+func (c *BaseCluster) FindCredentials() (*Credential, error) {
+	return c.installer.FindCredentials(c.CredentialID)
 }
 
-func (c *BaseCluster) SaveCredential() error {
-	c.installer.dbMtx.Lock()
-	defer c.installer.dbMtx.Unlock()
-	if _, err := c.FindCredential(); err == nil {
-		return nil
+func (c *BaseCluster) SaveCredentials() error {
+	if err := c.installer.SaveCredentials(c.credential); err != nil {
+		if err == credentialExistsError {
+			return nil
+		}
 	}
-	cred := c.credential
-	return c.installer.txExec(`
-		INSERT INTO credentials (ID, Secret, Name, Type) VALUES ($1, $2, $3, $4);
-  `, cred.ID, cred.Secret, cred.Name, cred.Type)
+	return nil
 }
 
 func (c *BaseCluster) saveField(field string, value interface{}) error {

@@ -69,6 +69,12 @@ var Credentials = React.createClass({
 
 					<button type="submit">Save</button>
 				</form>
+
+				{this.state.credentials.map(function (creds) {
+					return (
+						<div>{creds.name || creds.id}</div>
+					);
+				})}
 			</Modal>
 		);
 	},
@@ -100,8 +106,9 @@ var Credentials = React.createClass({
 			name: 'CREATE_CREDENTIAL',
 			data: {
 				name: this.refs.name.getDOMNode().value.trim(),
-				key_id: this.refs.key_id.getDOMNode().value.trim(),
-				key: this.refs.key.getDOMNode().value.trim()
+				id: this.refs.key_id.getDOMNode().value.trim(),
+				secret: this.refs.key.getDOMNode().value.trim(),
+				type: this.props.provider
 			}
 		});
 	},

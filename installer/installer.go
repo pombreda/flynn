@@ -52,6 +52,27 @@ func (i *Installer) txExec(query string, args ...interface{}) error {
 	return tx.Commit()
 }
 
+var credentialExistsError = errors.New("Credential already exists")
+
+func (i *Installer) SaveCredentials(creds *Credential) error {
+	i.dbMtx.Lock()
+	defer i.dbMtx.Unlock()
+	if _, err := i.FindCredentials(creds.ID); err == nil {
+		return credentialExistsError
+	}
+	return i.txExec(`
+		INSERT INTO credentials (ID, Secret, Name, Type) VALUES ($1, $2, $3, $4);
+  `, creds.ID, creds.Secret, creds.Name, creds.Type)
+}
+
+func (i *Installer) FindCredentials(id string) (*Credential, error) {
+	creds := &Credential{}
+	if err := i.db.QueryRow(`SELECT ID, Secret, Name, Type FROM credentials WHERE ID == $1 LIMIT 1`, id).Scan(&creds.ID, &creds.Secret, &creds.Name, &creds.Type); err != nil {
+		return nil, err
+	}
+	return creds, nil
+}
+
 func (i *Installer) LaunchCluster(c Cluster) error {
 	if err := c.SetDefaultsAndValidate(); err != nil {
 		return err
@@ -165,7 +186,7 @@ func (i *Installer) FindBaseCluster(id string) (*BaseCluster, error) {
 	}
 	c.InstanceIPs = instanceIPs
 
-	credential, err := c.FindCredential()
+	credential, err := c.FindCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -230,7 +251,7 @@ func (i *Installer) FindAWSCluster(id string) (*AWSCluster, error) {
 		return nil, err
 	}
 
-	awsCreds, err := awsCluster.FindCredential()
+	awsCreds, err := awsCluster.FindCredentials()
 	if err != nil {
 		return nil, err
 	}

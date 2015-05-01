@@ -45,6 +45,21 @@ export default createClass({
 				});
 			break;
 
+			case 'CREATE_CREDENTIAL':
+				if (this.__findCredentialIndex(event.data.id) !== -1) {
+					return;
+				}
+				this.__addCredential(event.data);
+				Client.createCredential(event.data).catch(function (args) {
+					var xhr = args[1];
+					if (xhr.status === 409) {
+						return; // Already exists
+					}
+					this.__removeCredential(event.data.id);
+					// TODO(jvatic): add error for ui to display
+				}.bind(this));
+			break;
+
 			case 'CONFIRM_CLUSTER_DELETE':
 				Client.deleteCluster(event.clusterID);
 			break;
@@ -101,6 +116,39 @@ export default createClass({
 		}
 
 		Client.launchCluster(cluster.toJSON());
+	},
+
+	__addCredential: function (data) {
+		var index = this.__findCredentialIndex(data.id);
+		if (index !== -1) {
+			return;
+		}
+		var creds = [data].concat(this.state.credentials);
+		this.setState({
+			credentials: creds
+		});
+	},
+
+	__removeCredential: function (credentialID) {
+		var creds = this.state.credentials;
+		var index = this.__findCredentialIndex(credentialID);
+		if (index === -1) {
+			return;
+		}
+		creds = creds.slice(0, index).concat(creds.slice(index+1));
+		this.setState({
+			credentials: creds
+		});
+	},
+
+	__findCredentialIndex: function (credentialID) {
+		var creds = this.state.credentials;
+		for (var i = 0, len = creds.length; i < len; i++) {
+			if (creds[i].id === credentialID) {
+				return i;
+			}
+		}
+		return -1;
 	},
 
 	__addCluster: function (cluster) {

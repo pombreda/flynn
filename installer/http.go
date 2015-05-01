@@ -56,10 +56,11 @@ func ServeHTTP() error {
 		logger:    logger,
 		clientConfig: installerJSConfig{
 			Endpoints: map[string]string{
-				"clusters": "/clusters",
-				"cluster":  "/clusters/:id",
-				"events":   "/events",
-				"prompt":   "/clusters/:id/prompts/:prompt_id",
+				"clusters":    "/clusters",
+				"cluster":     "/clusters/:id",
+				"events":      "/events",
+				"prompt":      "/clusters/:id/prompts/:prompt_id",
+				"credentials": "/credentials",
 			},
 		},
 	}
@@ -238,12 +239,19 @@ func (api *httpAPI) Prompt(w http.ResponseWriter, req *http.Request, params http
 }
 
 func (api *httpAPI) NewCredential(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
-	var cred *Credential
-	if err := httphelper.DecodeJSON(req, &cred); err != nil {
+	creds := &Credential{}
+	if err := httphelper.DecodeJSON(req, &creds); err != nil {
 		httphelper.Error(w, err)
 		return
 	}
-	// TODO(jvatic): Save credential in db
+	if err := api.Installer.SaveCredentials(creds); err != nil {
+		if err == credentialExistsError {
+			httphelper.ObjectExistsError(w, err.Error())
+			return
+		}
+		httphelper.Error(w, err)
+		return
+	}
 	w.WriteHeader(200)
 }
 

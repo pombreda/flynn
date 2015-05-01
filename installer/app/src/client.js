@@ -29,6 +29,16 @@ var Client = {
 		});
 	},
 
+	createCredential: function (data) {
+		return this.performRequest('POST', {
+			url: Config.endpoints.credentials,
+			body: data,
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+	},
+
 	launchCluster: function (data) {
 		this.performRequest('POST', {
 			url: Config.endpoints.clusters,

@@ -38,11 +38,11 @@ func (c *AWSCluster) SetBase(base *BaseCluster) {
 	c.base = base
 }
 
-func (c *AWSCluster) FindCredential() (aws.CredentialsProvider, error) {
+func (c *AWSCluster) FindCredentials() (aws.CredentialsProvider, error) {
 	if c.base.CredentialID == "aws_env" {
 		return aws.EnvCreds()
 	}
-	cred, err := c.base.FindCredential()
+	cred, err := c.base.FindCredentials()
 	if err != nil {
 		return nil, err
 	}
@@ -62,7 +62,7 @@ func (c *AWSCluster) SetCreds(creds *Credential) error {
 	c.base.credential = creds
 	c.base.CredentialID = creds.ID
 	c.creds = aws.Creds(creds.ID, creds.Secret, "")
-	return c.base.SaveCredential()
+	return c.base.SaveCredentials()
 }
 
 func (c *AWSCluster) wrapRequest(runRequest func() error) error {
