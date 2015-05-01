@@ -65,14 +65,14 @@ func (i *Installer) GetEventsSince(eventID string) []*Event {
 			ts = time.Unix(0, nano)
 		}
 	}
-	rows, err := i.db.Query(`SELECT ID, ClusterID, PromptID, Type, Timestamp, Description FROM events WHERE Timestamp > $1 AND DeletedAt IS NULL ORDER BY Timestamp`, ts)
+	rows, err := i.db.Query(`SELECT ID, ClusterID, ResourceType, ResourceID, Type, Timestamp, Description FROM events WHERE Timestamp > $1 AND DeletedAt IS NULL ORDER BY Timestamp`, ts)
 	if err != nil {
 		i.logger.Debug(fmt.Sprintf("GetEventsSince SQL Error: %s", err.Error()))
 		return events
 	}
 	for rows.Next() {
 		event := &Event{}
-		if err := rows.Scan(&event.ID, &event.ClusterID, &event.PromptID, &event.Type, &event.Timestamp, &event.Description); err != nil {
+		if err := rows.Scan(&event.ID, &event.ClusterID, &event.ResourceType, &event.ResourceID, &event.Type, &event.Timestamp, &event.Description); err != nil {
 			i.logger.Debug(fmt.Sprintf("GetEventsSince Scan Error: %s", err.Error()))
 			continue
 		}
@@ -88,13 +88,13 @@ func (i *Installer) GetEventsSince(eventID string) []*Event {
 				continue
 			}
 		}
-		if event.PromptID != "" {
+		if event.ResourceType == "prompt" && event.ResourceID != "" {
 			p := &Prompt{}
-			if err := i.db.QueryRow(`SELECT ID, Type, Message, Yes, Input, Resolved FROM prompts WHERE ID == $1 AND DeletedAt IS NULL`, event.PromptID).Scan(&p.ID, &p.Type, &p.Message, &p.Yes, &p.Input, &p.Resolved); err != nil {
+			if err := i.db.QueryRow(`SELECT ID, Type, Message, Yes, Input, Resolved FROM prompts WHERE ID == $1 AND DeletedAt IS NULL`, event.ResourceID).Scan(&p.ID, &p.Type, &p.Message, &p.Yes, &p.Input, &p.Resolved); err != nil {
 				i.logger.Debug(fmt.Sprintf("GetEventsSince Prompt Scan Error: %s", err.Error()))
 				continue
 			}
-			event.Prompt = p
+			event.Resource = p
 		}
 		events = append(events, event)
 	}
@@ -106,11 +106,13 @@ func (i *Installer) SendEvent(event *Event) {
 	event.ID = fmt.Sprintf("event-%d", event.Timestamp.UnixNano())
 
 	if event.Type == "prompt" {
-		if event.Prompt == nil {
+		prompt, ok := event.Resource.(*Prompt)
+		if !ok || prompt == nil {
 			i.logger.Debug(fmt.Sprintf("SendEvent Error: Invalid prompt event: %v", event))
 			return
 		}
-		event.PromptID = event.Prompt.ID
+		event.ResourceType = "prompt"
+		event.ResourceID = prompt.ID
 	}
 
 	if event.Type == "error" {
@@ -146,7 +148,7 @@ func (c *BaseCluster) sendPrompt(prompt *Prompt) *Prompt {
 	c.sendEvent(&Event{
 		Type:      "prompt",
 		ClusterID: c.ID,
-		Prompt:    prompt,
+		Resource:  prompt,
 	})
 
 	res := <-prompt.resChan
@@ -162,7 +164,7 @@ func (c *BaseCluster) sendPrompt(prompt *Prompt) *Prompt {
 	c.sendEvent(&Event{
 		Type:      "prompt",
 		ClusterID: c.ID,
-		Prompt:    prompt,
+		Resource:  prompt,
 	})
 
 	return res

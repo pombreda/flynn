@@ -119,7 +119,7 @@ var Client = {
 				break;
 
 				case 'prompt':
-					event.prompt = data.prompt;
+					event.prompt = data.resource;
 					if (data.prompt.resolved) {
 						event.name = 'INSTALL_PROMPT_RESOLVED';
 					} else {

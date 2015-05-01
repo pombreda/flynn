@@ -85,7 +85,7 @@ func (c *BaseCluster) MarkDeleted() (err error) {
 		return
 	}
 
-	if _, err = tx.Exec(`UPDATE prompts SET DeletedAt = now() WHERE ID IN (SELECT PromptID FROM events WHERE ClusterID == $1)`, c.ID); err != nil {
+	if _, err = tx.Exec(`UPDATE prompts SET DeletedAt = now() WHERE ID IN (SELECT ResourceID FROM events WHERE ClusterID == $1 AND ResourceType == "prompt")`, c.ID); err != nil {
 		tx.Rollback()
 		return
 	}

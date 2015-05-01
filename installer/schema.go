@@ -89,15 +89,16 @@ type InstanceIPs struct {
 }
 
 type Event struct {
-	ID          string       `json:"id" ql:"index xID"`
-	Timestamp   time.Time    `json:"timestamp"`
-	Type        string       `json:"type"`
-	ClusterID   string       `json:"cluster_id",omitempty`
-	PromptID    string       `json:"-"`
-	Description string       `json:"description,omitempty"`
-	Prompt      *Prompt      `json:"prompt,omitempty" ql:"-"`
-	Cluster     *BaseCluster `json:"cluster,omitempty" ql:"-"`
-	DeletedAt   *time.Time   `json:"deleted_at,omitempty"`
+	ID           string       `json:"id" ql:"index xID"`
+	Timestamp    time.Time    `json:"timestamp"`
+	Type         string       `json:"type"`
+	ClusterID    string       `json:"cluster_id,omitempty"`
+	Cluster      *BaseCluster `json:"cluster,omitempty" ql:"-"`
+	ResourceType string       `json:"resource_type,omitempty"`
+	ResourceID   string       `json:"resource_id,omitempty"`
+	Resource     interface{}  `json:"resource,omitempty" ql:"-"`
+	Description  string       `json:"description,omitempty"`
+	DeletedAt    *time.Time   `json:"deleted_at,omitempty"`
 }
 
 type Prompt struct {
@@ -158,7 +159,7 @@ func (i *Installer) updatedbColumns(in interface{}, t string) error {
 
 	for _, c := range remove {
 		if _, err := tx.Exec(fmt.Sprintf(`
-      ALTER TABLE %s DROP %s
+      ALTER TABLE %s DROP COLUMN %s
     `, t, c)); err != nil {
 			tx.Rollback()
 			return err
@@ -174,6 +175,50 @@ func (i *Installer) updatedbColumns(in interface{}, t string) error {
 		}
 	}
 
+	return tx.Commit()
+}
+
+// Event PromptID -> ResourceType + ResourceID
+func (i *Installer) runMigration1() error {
+	rows, err := i.db.Query("SELECT * FROM events LIMIT 0")
+	if err != nil {
+		return err
+	}
+	defer rows.Close()
+	columns, err := rows.Columns()
+	if err != nil {
+		return err
+	}
+
+	for _, c := range columns {
+		if c == "ResourceType" || c == "ResourceID" {
+			return nil
+		}
+	}
+
+	tx, err := i.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	if _, err := tx.Exec(`
+    ALTER TABLE events ADD ResourceType string;
+    ALTER TABLE events ADD ResourceID string;
+    UPDATE events SET ResourceType = "", ResourceID = "";
+  `); err != nil {
+		tx.Rollback()
+		return err
+	}
+
+	for _, c := range columns {
+		if c == "PromptID" {
+			if _, err := tx.Exec(`UPDATE events SET ResourceType = "prompt", ResourceID = PromptID WHERE PromptID != ""`); err != nil {
+				tx.Rollback()
+				return err
+			}
+			break
+		}
+	}
 	return tx.Commit()
 }
 
@@ -204,6 +249,10 @@ func (i *Installer) migrateDB() error {
 		}
 	}
 	if err := tx.Commit(); err != nil {
+		return err
+	}
+
+	if err := i.runMigration1(); err != nil {
 		return err
 	}
 
