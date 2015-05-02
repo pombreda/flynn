@@ -146,6 +146,7 @@ func (i *Installer) FindBaseCluster(id string) (*BaseCluster, error) {
 	for _, c := range i.clusters {
 		base := c.Base()
 		if base.ID == id {
+			i.clustersMtx.RUnlock()
 			return base, nil
 		}
 	}
@@ -199,6 +200,7 @@ func (i *Installer) FindCluster(id string) (Cluster, error) {
 	i.clustersMtx.RLock()
 	for _, c := range i.clusters {
 		if c.Base().ID == id {
+			i.clustersMtx.RUnlock()
 			return c, nil
 		}
 	}
