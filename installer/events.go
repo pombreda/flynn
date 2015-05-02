@@ -1,6 +1,7 @@
 package installer
 
 import (
+	"database/sql"
 	"errors"
 	"fmt"
 	"reflect"
@@ -99,12 +100,16 @@ func (i *Installer) GetEventsSince(eventID string) []*Event {
 			}
 			event.Resource = p
 		case "credential":
-			creds := &Credential{}
-			if err := i.db.QueryRow(`SELECT Type, Name, ID, Secret FROM credentials WHERE ID == $1 AND DeletedAt IS NULL`, event.ResourceID).Scan(&creds.Type, &creds.Name, &creds.ID, &creds.Secret); err != nil {
-				i.logger.Debug(fmt.Sprintf("GetEventsSince Credential Scan Error: %s", err.Error()))
-				continue
+			if event.Type == "new_credential" {
+				creds := &Credential{}
+				if err := i.db.QueryRow(`SELECT Type, Name, ID FROM credentials WHERE ID == $1 AND DeletedAt IS NULL`, event.ResourceID).Scan(&creds.Type, &creds.Name, &creds.ID); err != nil {
+					if err != sql.ErrNoRows {
+						i.logger.Debug(fmt.Sprintf("GetEventsSince Credential Scan Error: %s", err.Error()))
+					}
+					continue
+				}
+				event.Resource = creds
 			}
-			event.Resource = creds
 		default:
 			i.logger.Debug(fmt.Sprintf("GetEventsSince unsupported ResourceType \"%s\"", event.ResourceType))
 		}

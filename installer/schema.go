@@ -206,6 +206,7 @@ func (i *Installer) runMigration1() error {
     ALTER TABLE events ADD ResourceType string;
     ALTER TABLE events ADD ResourceID string;
     UPDATE events SET ResourceType = "", ResourceID = "";
+    DELETE FROM credentials WHERE ID == "aws_env";
   `); err != nil {
 		tx.Rollback()
 		return err

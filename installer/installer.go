@@ -9,6 +9,7 @@ import (
 
 	"github.com/flynn/flynn/Godeps/_workspace/src/github.com/cznic/ql"
 	log "github.com/flynn/flynn/Godeps/_workspace/src/gopkg.in/inconshreveable/log15.v2"
+	"github.com/flynn/flynn/pkg/httphelper"
 )
 
 var ClusterNotFoundError = errors.New("Cluster not found")
@@ -70,6 +71,31 @@ func (i *Installer) SaveCredentials(creds *Credential) error {
 		ResourceType: "credential",
 		ResourceID:   creds.ID,
 		Resource:     creds,
+	})
+	return nil
+}
+
+func (i *Installer) DeleteCredentials(id string) error {
+	if _, err := i.FindCredentials(id); err != nil {
+		return err
+	}
+	var count int64
+	if err := i.db.QueryRow(`SELECT count() FROM clusters WHERE CredentialID == $1 AND DeletedAt IS NULL`, id).Scan(&count); err != nil {
+		return err
+	}
+	if count > 0 {
+		return httphelper.JSONError{
+			Code:    httphelper.ConflictErrorCode,
+			Message: "Credential is currently being used by one or more clusters",
+		}
+	}
+	if err := i.txExec(`UPDATE credentials SET DeletedAt = now() WHERE ID == $1`, id); err != nil {
+		return err
+	}
+	go i.SendEvent(&Event{
+		Type:         "delete_credential",
+		ResourceType: "credential",
+		ResourceID:   id,
 	})
 	return nil
 }

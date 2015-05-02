@@ -42,6 +42,10 @@ export default createClass({
 				this.__addCredential(event.credential);
 			break;
 
+			case 'CREDENTIAL_DELETED':
+				this.__removeCredential(event.id);
+			break;
+
 			case 'CURRENT_CLUSTER':
 				this.setState({
 					currentClusterID: event.clusterID,
@@ -61,6 +65,20 @@ export default createClass({
 					}
 					this.__removeCredential(event.data.id);
 					// TODO(jvatic): add error for ui to display
+					console.log(args[0]);
+				}.bind(this));
+			break;
+
+			case 'DELETE_CREDENTIAL':
+				this.__removeCredential(event.creds.id);
+				Client.deleteCredential(event.creds.type, event.creds.id).catch(function (args) {
+					var xhr = args[1];
+					if (xhr.status === 409) {
+						// in use
+						this.__addCredential(event.creds);
+					}
+					// TODO(jvatic): add error for ui to display
+					console.log(args[0]);
 				}.bind(this));
 			break;
 

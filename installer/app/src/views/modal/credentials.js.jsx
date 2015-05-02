@@ -39,7 +39,11 @@ var Credentials = React.createClass({
 				}],
 				['> li:nth-of-type(2n)', {
 					backgroundColor: Colors.grayBlueColor
-				}]
+				}],
+				['> li a', {
+					color: 'inherit',
+					textDecoration: 'none'
+				}],
 			]
 		});
 		return {
@@ -49,11 +53,12 @@ var Credentials = React.createClass({
 	},
 
 	render: function () {
+		var provider = this.props.provider;
 		return (
 			<Modal visible={true} onHide={this.__handleHide}>
 				<h2>Credentials</h2>
 
-				<PrettySelect onChange={this.__handleProviderChange} value={this.props.provider}>
+				<PrettySelect onChange={this.__handleProviderChange} value={provider}>
 					<option value="aws">AWS</option>
 					<option value="digital_ocean">Digital Ocean</option>
 				</PrettySelect>
@@ -67,14 +72,14 @@ var Credentials = React.createClass({
 
 					<input ref="name" type="text" placeholder="Nickname" />
 
-					{this.props.provider === 'aws' ? (
+					{provider === 'aws' ? (
 						<div>
 							<input ref="key_id" type="text" placeholder="AWS_ACCESS_KEY_ID" />
 							<input ref="key" type="text" placeholder="AWS_ACCESS_KEY_ID" />
 						</div>
 					) : null}
 
-					{this.props.provider === 'digital_ocean' ? (
+					{provider === 'digital_ocean' ? (
 						<div>
 							<input ref="key" type="text" placeholder="Personal Access Token" />
 						</div>
@@ -85,12 +90,32 @@ var Credentials = React.createClass({
 
 				<ul id={this.props.listStyleEl.id}>
 					{this.state.credentials.filter(function (creds) {
-						return creds.type === this.props.provider;
-					}.bind(this)).map(function (creds) {
+						return creds.type === provider;
+					}).map(function (creds) {
 						return (
 							<li key={creds.id}>
-								<span>{creds.name || creds.id}</span>&nbsp;
-								<span className="fa fa-trash" title="Delete" />
+								{provider === 'digital_ocean' ? (
+									<span>{creds.name}</span>
+								) : (
+									<span>{creds.name} ({creds.id})</span>
+								)}&nbsp;
+								<a href="#delete" onClick={function (e) {
+									e.preventDefault();
+									var msg = 'Delete credential "'+ creds.name +'"';
+									if (provider !== 'digital_ocean') {
+										msg += ' ('+ creds.id +')';
+									}
+									msg += '?';
+									if ( !window.confirm(msg) ) {
+										return;
+									}
+									Dispatcher.dispatch({
+										name: "DELETE_CREDENTIAL",
+										creds: creds
+									});
+								}}>
+									<span className="fa fa-trash" title="Delete" />
+								</a>
 							</li>
 						);
 					})}
@@ -123,15 +148,41 @@ var Credentials = React.createClass({
 
 	__handleSubmit: function (e) {
 		e.preventDefault();
+		var id;
+		if (this.props.provider === 'digital_ocean') {
+			id = 'access-token-'+ Date.now();
+		} else {
+			id = this.refs.key_id.getDOMNode().value.trim();
+			if (id === '') {
+				this.refs.key_id.getDOMNode().focus();
+				return;
+			}
+		}
+		var name = this.refs.name.getDOMNode().value.trim();
+		if (name === '') {
+			this.refs.name.getDOMNode().focus();
+			return;
+		}
+		var secret = this.refs.key.getDOMNode().value.trim();
+		if (secret === '') {
+			this.refs.key.getDOMNode().focus();
+			return;
+		}
 		Dispatcher.dispatch({
 			name: 'CREATE_CREDENTIAL',
 			data: {
-				name: this.refs.name.getDOMNode().value.trim(),
-				id: this.refs.key_id.getDOMNode().value.trim(),
-				secret: this.refs.key.getDOMNode().value.trim(),
+				name: name,
+				id: id,
+				secret: secret,
 				type: this.props.provider
 			}
 		});
+		this.refs.name.getDOMNode().value = '';
+		if (this.props.provider !== 'digital_ocean') {
+			this.refs.key_id.getDOMNode().value = '';
+		}
+		this.refs.key.getDOMNode().value = '';
+		this.refs.name.getDOMNode().focus();
 	},
 
 	__handleProviderChange: function (e) {

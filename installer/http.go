@@ -83,6 +83,7 @@ func ServeHTTP() error {
 	httpRouter.POST("/clusters/:id/prompts/:prompt_id", api.Prompt)
 	httpRouter.GET("/assets/*assetPath", api.ServeAsset)
 	httpRouter.POST("/credentials", api.NewCredential)
+	httpRouter.DELETE("/credentials/:type/:id", api.DeleteCredential)
 
 	l, err := net.Listen("tcp", "127.0.0.1:0")
 	if err != nil {
@@ -249,6 +250,14 @@ func (api *httpAPI) NewCredential(w http.ResponseWriter, req *http.Request, para
 			httphelper.ObjectExistsError(w, err.Error())
 			return
 		}
+		httphelper.Error(w, err)
+		return
+	}
+	w.WriteHeader(200)
+}
+
+func (api *httpAPI) DeleteCredential(w http.ResponseWriter, req *http.Request, params httprouter.Params) {
+	if err := api.Installer.DeleteCredentials(params.ByName("id")); err != nil {
 		httphelper.Error(w, err)
 		return
 	}

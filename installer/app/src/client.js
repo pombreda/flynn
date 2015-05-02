@@ -39,6 +39,12 @@ var Client = {
 		});
 	},
 
+	deleteCredential: function (type, id) {
+		return this.performRequest('DELETE', {
+			url: Config.endpoints.credentials +'/'+ encodeURIComponent(type) +'/'+ encodeURIComponent(id),
+		});
+	},
+
 	launchCluster: function (data) {
 		this.performRequest('POST', {
 			url: Config.endpoints.clusters,
@@ -116,6 +122,11 @@ var Client = {
 				case 'new_credential':
 					event.name = 'NEW_CREDENTIAL';
 					event.credential = data.resource;
+				break;
+
+				case 'delete_credential':
+					event.name = 'CREDENTIAL_DELETED';
+					event.id = data.resource_id;
 				break;
 
 				case 'cluster_state':
