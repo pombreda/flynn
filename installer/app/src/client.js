@@ -113,6 +113,11 @@ var Client = {
 					event.cluster = new Cluster(data.cluster);
 				break;
 
+				case 'new_credential':
+					event.name = 'NEW_CREDENTIAL';
+					event.credential = data.resource;
+				break;
+
 				case 'cluster_state':
 					event.name = 'CLUSTER_STATE';
 					event.state = data.description;

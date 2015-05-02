@@ -60,9 +60,18 @@ func (i *Installer) SaveCredentials(creds *Credential) error {
 	if _, err := i.FindCredentials(creds.ID); err == nil {
 		return credentialExistsError
 	}
-	return i.txExec(`
+	if err := i.txExec(`
 		INSERT INTO credentials (ID, Secret, Name, Type) VALUES ($1, $2, $3, $4);
-  `, creds.ID, creds.Secret, creds.Name, creds.Type)
+  `, creds.ID, creds.Secret, creds.Name, creds.Type); err != nil {
+		return err
+	}
+	go i.SendEvent(&Event{
+		Type:         "new_credential",
+		ResourceType: "credential",
+		ResourceID:   creds.ID,
+		Resource:     creds,
+	})
+	return nil
 }
 
 func (i *Installer) FindCredentials(id string) (*Credential, error) {

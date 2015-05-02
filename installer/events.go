@@ -89,13 +89,24 @@ func (i *Installer) GetEventsSince(eventID string) []*Event {
 				continue
 			}
 		}
-		if event.ResourceType == "prompt" && event.ResourceID != "" {
+		switch event.ResourceType {
+		case "":
+		case "prompt":
 			p := &Prompt{}
 			if err := i.db.QueryRow(`SELECT ID, Type, Message, Yes, Input, Resolved FROM prompts WHERE ID == $1 AND DeletedAt IS NULL`, event.ResourceID).Scan(&p.ID, &p.Type, &p.Message, &p.Yes, &p.Input, &p.Resolved); err != nil {
 				i.logger.Debug(fmt.Sprintf("GetEventsSince Prompt Scan Error: %s", err.Error()))
 				continue
 			}
 			event.Resource = p
+		case "credential":
+			creds := &Credential{}
+			if err := i.db.QueryRow(`SELECT Type, Name, ID, Secret FROM credentials WHERE ID == $1 AND DeletedAt IS NULL`, event.ResourceID).Scan(&creds.Type, &creds.Name, &creds.ID, &creds.Secret); err != nil {
+				i.logger.Debug(fmt.Sprintf("GetEventsSince Credential Scan Error: %s", err.Error()))
+				continue
+			}
+			event.Resource = creds
+		default:
+			i.logger.Debug(fmt.Sprintf("GetEventsSince unsupported ResourceType \"%s\"", event.ResourceType))
 		}
 		events = append(events, event)
 	}

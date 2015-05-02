@@ -38,6 +38,10 @@ export default createClass({
 				this.__addCluster(event.cluster);
 			break;
 
+			case 'NEW_CREDENTIAL':
+				this.__addCredential(event.credential);
+			break;
+
 			case 'CURRENT_CLUSTER':
 				this.setState({
 					currentClusterID: event.clusterID,

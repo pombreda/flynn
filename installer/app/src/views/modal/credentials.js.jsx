@@ -30,8 +30,21 @@ var Credentials = React.createClass({
 				['button:disabled', DisabledBtnCSS]
 			]
 		});
+		var listStyleEl = Sheet.createElement({
+			listStyle: 'none',
+			padding: 0,
+			selectors: [
+				['> li', {
+					padding: '0.25em 0.5em'
+				}],
+				['> li:nth-of-type(2n)', {
+					backgroundColor: Colors.grayBlueColor
+				}]
+			]
+		});
 		return {
-			formStyleEl: formStyleEl
+			formStyleEl: formStyleEl,
+			listStyleEl: listStyleEl
 		};
 	},
 
@@ -70,17 +83,25 @@ var Credentials = React.createClass({
 					<button type="submit">Save</button>
 				</form>
 
-				{this.state.credentials.map(function (creds) {
-					return (
-						<div>{creds.name || creds.id}</div>
-					);
-				})}
+				<ul id={this.props.listStyleEl.id}>
+					{this.state.credentials.filter(function (creds) {
+						return creds.type === this.props.provider;
+					}.bind(this)).map(function (creds) {
+						return (
+							<li key={creds.id}>
+								<span>{creds.name || creds.id}</span>&nbsp;
+								<span className="fa fa-trash" title="Delete" />
+							</li>
+						);
+					})}
+				</ul>
 			</Modal>
 		);
 	},
 
 	componentDidMount: function () {
 		this.props.formStyleEl.commit();
+		this.props.listStyleEl.commit();
 		this.props.dataStore.addChangeListener(this.__handleDataChange);
 	},
 
