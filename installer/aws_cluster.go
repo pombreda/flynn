@@ -62,7 +62,7 @@ func (c *AWSCluster) SetCreds(creds *Credential) error {
 	c.base.credential = creds
 	c.base.CredentialID = creds.ID
 	c.creds = aws.Creds(creds.ID, creds.Secret, "")
-	return c.base.SaveCredentials()
+	return nil
 }
 
 func (c *AWSCluster) wrapRequest(runRequest func() error) error {

@@ -22,15 +22,6 @@ func (c *BaseCluster) FindCredentials() (*Credential, error) {
 	return c.installer.FindCredentials(c.CredentialID)
 }
 
-func (c *BaseCluster) SaveCredentials() error {
-	if err := c.installer.SaveCredentials(c.credential); err != nil {
-		if err == credentialExistsError {
-			return nil
-		}
-	}
-	return nil
-}
-
 func (c *BaseCluster) saveField(field string, value interface{}) error {
 	c.installer.dbMtx.Lock()
 	defer c.installer.dbMtx.Unlock()

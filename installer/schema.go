@@ -58,7 +58,7 @@ type DigitalOceanCluster struct {
 
 type BaseCluster struct {
 	ID                  string            `json:"id" ql:"index xID"`
-	CredentialID        string            `json:"-"`
+	CredentialID        string            `json:"credential_id"`
 	Type                string            `json:"type"`                    // enum(aws)
 	State               string            `json:"state" ql:"index xState"` // enum(starting, error, running, deleting)
 	Name                string            `json:"name" ql:"-"`

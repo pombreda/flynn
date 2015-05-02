@@ -1,5 +1,5 @@
 import Config from '../config';
-import BtnCSS from './css/button';
+import PrettySelect from './pretty-select';
 
 var AWSCredentialsPicker = React.createClass({
 	getDefaultProps: function () {
@@ -20,54 +20,22 @@ var AWSCredentialsPicker = React.createClass({
 		return (
 			<div>
 				<div>AWS Credentials: </div>
-				<div style={{
-						marginLeft: 10
-					}}>
-					{Config.has_aws_env_credentials && !this.state.showInputs ? (
-						<div>
-							Using credentials in AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY.&nbsp;
-							<button type="text" style={BtnCSS} onClick={function () {
-									this.setState({
-										showInputs: true
-									});
-								}.bind(this)}>Override</button>
-						</div>
+				<PrettySelect onChange={this.__handleChange} value={this.props.value}>
+					{Config.has_aws_env_credentials ? (
+						<option value="aws_env">Use AWS Env vars</option>
 					) : null}
-					<div style={{
-							display: this.state.showInputs ? 'block' : 'none'
-						}}>
-						<br />
-						<label>
-							<div>Access Key ID: </div>
-							<input
-								ref="key"
-								type="text"
-								style={this.props.inputCSS}
-								placeholder="AWS_ACCESS_KEY_ID"
-								onChange={this.__handleChange} />
-						</label>
-						<br />
-						<br />
-						<label>
-							<div>Secret Access Key: </div>
-							<input
-								ref="secret"
-								type="text"
-								style={this.props.inputCSS}
-								placeholder="AWS_SECRET_ACCESS_KEY"
-								onChange={this.__handleChange} />
-						</label>
-					</div>
-				</div>
+					{this.props.credentials.map(function (creds) {
+						return (
+							<option key={creds.id} value={creds.id}>{creds.name} ({creds.id})</option>
+						);
+					})}
+				</PrettySelect>
 			</div>
 		);
 	},
 
-	__handleChange: function () {
-		this.props.onChange({
-			access_key_id: this.refs.key.getDOMNode().value.trim(),
-			secret_access_key: this.refs.secret.getDOMNode().value.trim()
-		});
+	__handleChange: function (e) {
+		this.props.onChange(e.target.value);
 	}
 });
 export default AWSCredentialsPicker;

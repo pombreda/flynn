@@ -189,7 +189,7 @@ Cluster.jsonFields = {
 	ca_cert: 'caCert',
 	vpc_cidr: 'vpcCidr',
 	subnetCidr: 'subnetCidr',
-	creds: 'creds'
+	credential_id: 'credentialID'
 };
 
 export default Cluster;

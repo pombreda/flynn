@@ -36,10 +36,6 @@ type installerJSConfig struct {
 	HasAWSEnvCredentials bool              `json:"has_aws_env_credentials"`
 }
 
-type jsonCredsInput struct {
-	Creds *Credential `json:"creds,omitempty"`
-}
-
 type httpAPI struct {
 	AWSEnvCreds  aws.CredentialsProvider
 	Installer    *Installer
@@ -151,6 +147,25 @@ func (api *httpAPI) LaunchCluster(w http.ResponseWriter, req *http.Request, para
 		return
 	}
 
+	if base.CredentialID == "" {
+		httphelper.ValidationError(w, "credential_id", "Missing credential id")
+		return
+	}
+
+	var creds *Credential
+	if base.Type == "aws" && base.CredentialID == "aws_env" {
+		creds = &Credential{
+			ID: base.CredentialID,
+		}
+	} else {
+		var err error
+		creds, err = api.Installer.FindCredentials(base.CredentialID)
+		if err != nil {
+			httphelper.ValidationError(w, "credential_id", "Invalid credential id")
+			return
+		}
+	}
+
 	var cluster Cluster
 	switch base.Type {
 	case "aws":
@@ -173,18 +188,10 @@ func (api *httpAPI) LaunchCluster(w http.ResponseWriter, req *http.Request, para
 
 	cluster.SetBase(base)
 
-	var wrappedCreds *jsonCredsInput
-	if err := decodeJSON(&wrappedCreds); err != nil {
+	if err := cluster.SetCreds(creds); err != nil {
 		httphelper.Error(w, err)
 		return
 	}
-
-	if err := cluster.SetCreds(wrappedCreds.Creds); err != nil {
-		httphelper.Error(w, err)
-		return
-	}
-
-	fmt.Println(wrappedCreds.Creds)
 
 	if err := api.Installer.LaunchCluster(cluster); err != nil {
 		httphelper.Error(w, err)

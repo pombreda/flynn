@@ -27,7 +27,9 @@ var Wizard = React.createClass({
 
 					<Panel style={{ flexGrow: 1, WebkitFlexGrow: 1, height: '100%' }}>
 						{state.currentStep === 'configure' ? (
-							<AWSLauncher state={state} />
+							<AWSLauncher state={state} credentials={this.state.credentials.filter(function (creds) {
+								return creds.type === 'aws';
+							})} />
 						) : null}
 
 						{state.currentStep === 'install' ? (
