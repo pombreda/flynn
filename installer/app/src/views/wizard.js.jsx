@@ -1,5 +1,5 @@
 import InstallSteps from './install-steps';
-import AWSLauncher from './aws-launcher';
+import CloudSelector from './cloud-selector';
 import InstallProgress from './install-progress';
 import Dashboard from './dashboard';
 import Panel from './panel';
@@ -27,9 +27,7 @@ var Wizard = React.createClass({
 
 					<Panel style={{ flexGrow: 1, WebkitFlexGrow: 1, height: '100%' }}>
 						{state.currentStep === 'configure' ? (
-							<AWSLauncher state={state} credentials={this.state.credentials.filter(function (creds) {
-								return creds.type === 'aws';
-							})} />
+							<CloudSelector state={state} credentials={this.state.credentials} />
 						) : null}
 
 						{state.currentStep === 'install' ? (

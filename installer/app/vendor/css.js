@@ -81,10 +81,14 @@ CSS.prototype.toCSSString = function () {
 		selectors.forEach(function (item) {
 			var s = item[0];
 			var m = item[1];
+			var sep = '';
+			if (s.substr(0,1) !== ':') {
+				sep = ' ';
+			}
 			str += '\n';
-			str += '#'+ id + ' '+ s +' {\n';
+			str += '#'+ id + sep + s +' {\n';
 			str += Object.keys(m).sort().map(function (k) {
-				return '\t'+ cssPropertyStr(k, m[k]);
+				return '\t' + cssPropertyStr(k, m[k]);
 			}).join('\n');
 			str += '\n}';
 		});

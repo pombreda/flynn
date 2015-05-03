@@ -12,6 +12,7 @@ var Cluster = createClass({
 	__computeInstallState: function (attrs) {
 		var prevState = this.getInstallState() || {
 			logEvents: [],
+			selectedProvider: 'aws',
 			certVerified: false,
 			domainName: null,
 			caCert: null,
@@ -33,6 +34,7 @@ var Cluster = createClass({
 				{ id: 'dashboard', label: 'Dashboard', complete: false }
 			],
 			currentStep: 'configure',
+			selectedProvider: prevState.selectedProvider,
 			certVerified: prevState.certVerified,
 
 			domainName: attrs.domain ? attrs.domain.domain : prevState.domainName,
