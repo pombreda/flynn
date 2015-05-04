@@ -1,5 +1,10 @@
+import Config from '../config';
 import InstallSteps from './install-steps';
 import CloudSelector from './cloud-selector';
+import CredentialsPicker from './credentials-picker';
+import RouteLink from './route-link';
+import AWSLauncher from './aws-launcher';
+import DigitalOceanLauncher from './digital-ocean-launcher';
 import InstallProgress from './install-progress';
 import Dashboard from './dashboard';
 import Panel from './panel';
@@ -23,11 +28,32 @@ var Wizard = React.createClass({
 					WebkitFlexFlow: 'column',
 					height: '100%'
 				}}>
+					{state.currentStep === 'configure' ? (
+						<CloudSelector state={state} onChange={this.__handleCloudChange} />
+					) : null}
+
 					<InstallSteps state={state} style={{ height: 16 }} />
 
-					<Panel style={{ flexGrow: 1, WebkitFlexGrow: 1, height: '100%' }}>
-						{state.currentStep === 'configure' ? (
-							<CloudSelector state={state} credentials={this.state.credentials} onChange={this.__handleCloudChange} />
+					<Panel style={{ flexGrow: 1, WebkitFlexGrow: 1 }}>
+						{state.credentialID ? (
+							<CredentialsPicker
+								credentials={state.credentials}
+								value={state.credentialID}
+								onChange={this.__handleCredentialsChange}>
+								{state.selectedCloud === 'aws' && Config.has_aws_env_credentials ? (
+									<option value="aws_env">Use AWS Env vars</option>
+								) : null}
+							</CredentialsPicker>
+						) : (
+							<RouteLink path={'/credentials?provider='+ state.selectedCloud} style={BtnCSS}>Add credentials to continue</RouteLink>
+						)}
+
+						{state.currentStep === 'configure' && state.selectedCloud === 'aws' ? (
+							<AWSLauncher state={state} />
+						) : null}
+
+						{state.currentStep === 'configure' && state.selectedCloud === 'digital_ocean' ? (
+							<DigitalOceanLauncher state={state} />
 						) : null}
 
 						{state.currentStep === 'install' ? (
@@ -91,6 +117,14 @@ var Wizard = React.createClass({
 		Dispatcher.dispatch({
 			name: 'SELECT_CLOUD',
 			cloud: cloud,
+			clusterID: this.state.currentCluster.ID
+		});
+	},
+
+	__handleCredentialsChange: function (credentialID) {
+		Dispatcher.dispatch({
+			name: 'SELECT_CREDENTIAL',
+			credentialID: credentialID,
 			clusterID: this.state.currentCluster.ID
 		});
 	},

@@ -69,10 +69,24 @@ var PrettyRadio = React.createClass({
 	},
 
 	render: function () {
+		var props = this.props;
+		var inputProps = {
+			type: 'radio',
+			name: props.name,
+			value: props.value,
+			onChange: props.onChange || function(){},
+			key: props.value + (props.checked ? '1' : '0') // workaround react bug
+		};
+		if (props.disabled) {
+			inputProps.disabled = true;
+		}
+		if (props.checked) {
+			inputProps.checked = true;
+		}
 		return (
 			<label id={this.state.styleEl.id}>
 				{this.props.children}
-				<input disabled={this.props.disabled} name={this.props.name} value={this.props.value} onChange={this.props.onChange} type="radio" checked={this.props.checked} />
+					<input {...inputProps} />
 				<div data-dot />
 			</label>
 		);

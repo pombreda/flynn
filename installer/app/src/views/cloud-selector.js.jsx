@@ -1,5 +1,5 @@
 import AssetPaths from './asset-paths';
-import AWSLauncher from './aws-launcher';
+import Panel from './panel';
 import PrettyRadio from './pretty-radio';
 import Sheet from './css/sheet';
 
@@ -8,6 +8,8 @@ var cloudNames = {
 	digital_ocean: 'DigitalOcean'
 };
 
+var cloudIDs = ['aws', 'digital_ocean'];
+
 var CloudSelector = React.createClass({
 	getInitialState: function () {
 		var styleEl = Sheet.createElement({
@@ -15,8 +17,23 @@ var CloudSelector = React.createClass({
 			textAlign: 'center',
 			marginBottom: '1rem',
 			selectors: [
+				['> * ', {
+					flexGrow: 1,
+					flexBasis: '50%',
+
+					selectors: [
+						['> *', {
+							padding: '20px'
+						}]
+					]
+				}],
+
 				['img', {
 					height: '100px'
+				}],
+
+				['> * + *', {
+					marginLeft: '1rem'
 				}]
 			]
 		});
@@ -30,19 +47,16 @@ var CloudSelector = React.createClass({
 		return (
 			<div>
 				<div id={this.state.styleEl.id}>
-					{['aws', 'digital_ocean'].map(function (cloud) {
+					{cloudIDs.map(function (cloud) {
 						return (
-							<PrettyRadio key={cloud} name='cloud' value={cloud} checked={state.selectedCloud === cloud} onChange={this.__handleCloudChange}>
-								<img src={AssetPaths[cloud.replace('_', '')+'-logo.jpg']} alt={cloudNames[cloud]} />
-							</PrettyRadio>
+							<Panel key={cloud} style={{padding: 0}}>
+								<PrettyRadio name='cloud' value={cloud} checked={state.selectedCloud === cloud} onChange={this.__handleCloudChange}>
+									<img src={AssetPaths[cloud.replace('_', '')+'-logo.jpg']} alt={cloudNames[cloud]} />
+								</PrettyRadio>
+							</Panel>
 						);
 					}.bind(this))}
 				</div>
-				{state.selectedCloud === 'aws' ? (
-					<AWSLauncher state={state} credentials={this.props.credentials.filter(function (creds) {
-						return creds.type === 'aws';
-					})} />
-				) : null}
 			</div>
 		);
 	},

@@ -1,26 +1,15 @@
-import Config from '../config';
-import { green as GreenBtnCSS, default as BtnCSS, disabled as BtnDisabledCSS } from './css/button';
-import AWSCredentialsPicker from './aws-credentials-picker';
+import { green as GreenBtnCSS, disabled as BtnDisabledCSS } from './css/button';
 import AWSRegionPicker from './aws-region-picker';
 import AWSInstanceTypePicker from './aws-instance-type-picker';
 import AWSAdvancedOptions from './aws-advanced-options';
 import IntegerPicker from './integer-picker';
 import Dispatcher from '../dispatcher';
-import RouteLink from './route-link';
 import { extend } from 'marbles/utils';
 
 var InstallConfig = React.createClass({
 	render: function () {
 		return (
 			<form onSubmit={this.__handleSubmit}>
-				{this.props.credentials.length > 0 || Config.has_aws_env_credentials ? (
-					<AWSCredentialsPicker
-						credentials={this.props.credentials}
-						value={this.state.credentialID}
-						onChange={this.__handleCredentialsChange} />
-				) : (
-					<RouteLink path="/credentials?provider=aws" style={BtnCSS}>Add credential to continue</RouteLink>
-				)}
 				{this.state.credentialID ? (
 					<div>
 						<br />
@@ -74,25 +63,14 @@ var InstallConfig = React.createClass({
 
 	__getState: function () {
 		var state = this.props.state;
-		var firstCredID = null;
-		if (this.props.credentials.length > 0) {
-			firstCredID = this.props.credentials[0].id;
-		}
 		return {
-			credentialID: this.__credentialID || (Config.has_aws_env_credentials ? 'aws_env' : firstCredID),
+			credentialID: state.credentialID,
 			region: 'us-east-1',
 			instanceType: 'm3.medium',
 			numInstances: 1,
 			advancedOptionsKeys: [],
-			launchBtnDisabled: state.currentStep !== 'configure',
+			launchBtnDisabled: state.currentStep !== 'configure'
 		};
-	},
-
-	__handleCredentialsChange: function (credentialID) {
-		this.__credentialID = credentialID;
-		this.setState({
-			credentialID: credentialID
-		});
 	},
 
 	__handleRegionChange: function (region) {
@@ -130,7 +108,6 @@ var InstallConfig = React.createClass({
 		}.bind(this));
 		Dispatcher.dispatch(extend({
 			name: 'LAUNCH_AWS',
-			credentialID: this.state.credentialID,
 			region: this.state.region,
 			instanceType: this.state.instanceType,
 			numInstances: this.state.numInstances

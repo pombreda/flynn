@@ -1,5 +1,6 @@
 import { createClass } from 'marbles/utils';
 import State from 'marbles/state';
+import Config from './config';
 
 var Cluster = createClass({
 	willInitialize: function (attrs) {
@@ -13,6 +14,7 @@ var Cluster = createClass({
 		var prevState = this.getInstallState() || {
 			logEvents: [],
 			selectedCloud: 'aws',
+			credentialID: null,
 			certVerified: false,
 			domainName: null,
 			caCert: null,
@@ -20,7 +22,8 @@ var Cluster = createClass({
 			prompt: null,
 			deleting: false,
 			failed: false,
-			errorDismissed: false
+			errorDismissed: false,
+			__credentials: []
 		};
 		var state = {
 			inProgress: false,
@@ -34,15 +37,39 @@ var Cluster = createClass({
 				{ id: 'dashboard', label: 'Dashboard', complete: false }
 			],
 			currentStep: 'configure',
-			selectedCloud: prevState.selectedCloud,
-			certVerified: prevState.certVerified,
+			selectedCloud: attrs.selectedCloud || prevState.selectedCloud,
+			credentialID: attrs.credentialID || prevState.credentialID,
+			certVerified: attrs.certVerified || prevState.certVerified,
 
 			domainName: attrs.domain ? attrs.domain.domain : prevState.domainName,
 			caCert: attrs.ca_cert ? window.btoa(attrs.ca_cert) : prevState.caCert,
 			dashboardLoginToken: attrs.dashboard_login_token || prevState.dashboardLoginToken,
 
+			__credentials: attrs.credentials || prevState.__credentials,
+
 			prompt: prevState.prompt
 		};
+
+		var credentialIDExists = false;
+		state.credentials = state.__credentials.filter(function (creds) {
+			var keep = creds.type === state.selectedCloud;
+			if (keep && creds.id === state.credentialID) {
+				credentialIDExists = true;
+			}
+			return keep;
+		});
+
+		if ( !credentialIDExists ) {
+			state.credentialID = null;
+		}
+
+		if (state.credentialID === null && state.selectedCloud === 'aws' && Config.has_aws_env_credentials) {
+			state.credentialID = 'aws_env';
+		}
+
+		if (state.credentialID === null && state.credentials.length > 0) {
+			state.credentialID = state.credentials[0].id;
+		}
 
 		switch (attrs.state) {
 			case 'starting':
@@ -167,10 +194,21 @@ var Cluster = createClass({
 			break;
 
 			case 'SELECT_CLOUD':
-				console.log(event);
-				this.__setInstallState({
+				this.__setInstallState(this.__computeInstallState({
 					selectedCloud: event.cloud
-				});
+				}));
+			break;
+
+			case 'SELECT_CREDENTIAL':
+				this.__setInstallState(this.__computeInstallState({
+					credentialID: event.credentialID
+				}));
+			break;
+
+			case 'CREDENTIALS_CHANGE':
+				this.__setInstallState(this.__computeInstallState({
+					credentials: event.credentials
+				}));
 			break;
 		}
 	},

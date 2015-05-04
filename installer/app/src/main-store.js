@@ -2,6 +2,7 @@ import { createClass } from 'marbles/utils';
 import State from 'marbles/state';
 import Client from './client';
 import Cluster from './cluster';
+import Dispatcher from './dispatcher';
 
 var newCluster = new Cluster({id: 'new'});
 
@@ -15,6 +16,7 @@ export default createClass({
 	willInitialize: function () {
 		this.__handleClusterChanged = this.__handleClusterChanged.bind(this);
 		this.state = this.getInitialState();
+		newCluster.addChangeListener(this.__handleClusterChanged);
 		this.__changeListeners = [];
 	},
 
@@ -105,12 +107,20 @@ export default createClass({
 				}
 			break;
 
+			case 'CREDENTIALS_CHANGE':
+				newCluster.handleEvent(event);
+			break;
+
 			default:
 				if (event.name === "CLUSTER_STATE" && event.state === "deleted") {
 					this.__removeCluster(event.clusterID);
 				}
 
-				cluster = this.__findCluster(event.clusterID);
+				if (event.clusterID === 'new') {
+					cluster = newCluster;
+				} else {
+					cluster = this.__findCluster(event.clusterID);
+				}
 				if (cluster) {
 					cluster.handleEvent(event);
 				}
@@ -121,7 +131,7 @@ export default createClass({
 	launchAWS: function (inputs) {
 		var cluster = new Cluster({});
 		cluster.type = 'aws';
-		cluster.credentialID = inputs.credentialID;
+		cluster.credentialID = newCluster.getInstallState().credentialID;
 		cluster.region = inputs.region;
 		cluster.instanceType = inputs.instanceType;
 		cluster.numInstances = inputs.numInstances;
@@ -146,6 +156,7 @@ export default createClass({
 		this.setState({
 			credentials: creds
 		});
+		this.__propagateCredentialsChange();
 	},
 
 	__removeCredential: function (credentialID) {
@@ -157,6 +168,14 @@ export default createClass({
 		creds = creds.slice(0, index).concat(creds.slice(index+1));
 		this.setState({
 			credentials: creds
+		});
+		this.__propagateCredentialsChange();
+	},
+
+	__propagateCredentialsChange: function () {
+		Dispatcher.dispatch({
+			name: 'CREDENTIALS_CHANGE',
+			credentials: this.state.credentials
 		});
 	},
 
