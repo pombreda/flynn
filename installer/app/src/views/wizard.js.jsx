@@ -27,7 +27,7 @@ var Wizard = React.createClass({
 
 					<Panel style={{ flexGrow: 1, WebkitFlexGrow: 1, height: '100%' }}>
 						{state.currentStep === 'configure' ? (
-							<CloudSelector state={state} credentials={this.state.credentials} />
+							<CloudSelector state={state} credentials={this.state.credentials} onChange={this.__handleCloudChange} />
 						) : null}
 
 						{state.currentStep === 'install' ? (
@@ -85,6 +85,14 @@ var Wizard = React.createClass({
 
 	componentWillUnmount: function () {
 		this.props.dataStore.removeChangeListener(this.__handleDataChange);
+	},
+
+	__handleCloudChange: function (cloud) {
+		Dispatcher.dispatch({
+			name: 'SELECT_CLOUD',
+			cloud: cloud,
+			clusterID: this.state.currentCluster.ID
+		});
 	},
 
 	__handleFailedModalHide: function () {

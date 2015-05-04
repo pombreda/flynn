@@ -17,19 +17,9 @@ var PrettyRadio = React.createClass({
 			display: 'block',
 			width: '100%',
 			height: '100%',
+			marginBottom: '22px',
 
 			selectors: [
-				[':before', {
-					display: 'table',
-					content: '" "'
-				}],
-
-				[':after', {
-					display: 'table',
-					content: '" "',
-					clear: 'both'
-				}],
-
 				['> *', {
 					boxSizing: 'content-box'
 				}],
@@ -82,7 +72,7 @@ var PrettyRadio = React.createClass({
 		return (
 			<label id={this.state.styleEl.id}>
 				{this.props.children}
-				<input disabled={this.props.disabled} name={this.props.name} onChange={this.props.onChange} type="radio" checked={this.props.checked} />
+				<input disabled={this.props.disabled} name={this.props.name} value={this.props.value} onChange={this.props.onChange} type="radio" checked={this.props.checked} />
 				<div data-dot />
 			</label>
 		);
