@@ -57,6 +57,13 @@ CSS.prototype.commit = function () {
 };
 
 CSS.prototype.toCSSString = function () {
+	return this.elements.map(function (element) {
+		var selector = '#'+ element.id;
+		return this.moduleToCSSString(selector, element.compiled);
+	}.bind(this)).join('\n');
+};
+
+CSS.prototype.moduleToCSSString = function (selector, module) {
 	var self = this;
 	var cssPropertyStr = function (k, v) {
 		self.transformers.forEach(function (t) {
@@ -66,35 +73,55 @@ CSS.prototype.toCSSString = function () {
 		});
 		return cssPropertyName(k) +': '+ v +';';
 	};
-	return this.elements.map(function (element) {
-		var id = element.id;
-		var module = element.compiled;
-		var str = '#'+ id +' {\n';
-		str += Object.keys(module).sort().filter(function (k) {
+
+	var compileProperties = function (s, m) {
+		var res = '';
+		res += s +' {\n';
+		var keys = Object.keys(m).sort().filter(function (k) {
 			return k !== 'selectors';
-		}).map(function (k) {
-			return '\t'+ cssPropertyStr(k, module[k]);
+		})
+		if (keys.length === 0) {
+			return '';
+		}
+		res += keys.map(function (k) {
+			return '\t'+ cssPropertyStr(k, m[k]);
 		}).join('\n');
-		str += '\n}';
+		res += '\n}';
+		return res;
+	};
 
-		var selectors = module.selectors || [];
-		selectors.forEach(function (item) {
-			var s = item[0];
-			var m = item[1];
-			var sep = '';
-			if (s.substr(0,1) !== ':') {
-				sep = ' ';
-			}
+	var joinSelectors = function (a, b) {
+		var sep ='';
+		if (b.substr(0,1) !== ':') {
+			sep = ' ';
+		}
+		return a + sep + b;
+	};
+
+	var flattenSelectors = function (s, m) {
+		var selectors = [];
+		if (m.hasOwnProperty('selectors')) {
+			m.selectors.forEach(function (item) {
+				selectors.push([joinSelectors(s, item[0]), item[1]]);
+				selectors.push.apply(selectors, flattenSelectors(joinSelectors(s, item[0]), item[1]));
+			});
+		}
+		return selectors;
+	};
+
+	var str = compileProperties(selector, module);
+
+	var selectors = flattenSelectors(selector, module);
+	selectors.forEach(function (item) {
+		var s = item[0];
+		var m = item[1];
+		if (str !== '') {
 			str += '\n';
-			str += '#'+ id + sep + s +' {\n';
-			str += Object.keys(m).sort().map(function (k) {
-				return '\t' + cssPropertyStr(k, m[k]);
-			}).join('\n');
-			str += '\n}';
-		});
+		}
+		str += compileProperties(s, m);
+	});
 
-		return str;
-	}).join('\n');
+	return str;
 };
 
 var CSSElement = function (modules) {
